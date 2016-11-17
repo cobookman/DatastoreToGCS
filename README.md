@@ -14,4 +14,3 @@ You'll need to specify your own:
  - isBlocking (if put in the command, the java binary will block until the
    dataflow job finishes).
 
-
