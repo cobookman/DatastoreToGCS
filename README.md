@@ -54,9 +54,19 @@ Take a look at the restore.sh script. The following flags need to be set:
 * stagingLocation, gcs path to a place gcs can use to store staging files
 * tempLocation, gcs path to a scratch disk for the dataflow job
 * backupGCSPrefix, where your backups are stored
-* datastoreEntityKind, the Datastore Entity
-  [Kind](https://cloud.google.com/datastore/docs/concepts/entities#kinds_and_identifiers)
 
 If you'd like the java program to block until the dataflow job is complete add
 the `--isBlocking` flag.
 
+For example say you wanted to restore a a backup ran on 11/29/2016 at 11:10:55 am on the entity kind
+of ComicBooks. And you specified a backupGCSPrefix of
+`gs://superman-backups/datastore`.
+Your restore command would look like:
+
+```bash
+java -jar build/libs/*.jar restore \
+  --project=superman \
+  --stagingLocation=gs://superman-backups/staging/ \
+  --tempLocation=gs://superman-backups/temp/ \
+  --backupGCSPrefix=gs://superman-backups/datastore/ComicBooks.2016.11.29_11.10.55/
+```

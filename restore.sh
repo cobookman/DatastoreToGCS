@@ -12,6 +12,5 @@ java -jar $DIR/build/libs/*.jar \
    --stagingLocation=gs://some-gcs-bucket-of-mine/staging/ \
    --tempLocation=gs://some-gcs-bucket-of-mine/temp/ \
    --backupGCSPrefix=gs://some-gcs-bucket-of-mine/path-to-backup-folder/ \
-   --datastoreEntityKind=some-entity-kind \
    --isBlocking
 
