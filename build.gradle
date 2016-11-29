@@ -25,11 +25,9 @@ repositories {
 // In this section you declare the dependencies for your production and test code
 dependencies {
     compile 'com.google.guava:guava:18.0'
-    compile group: 'com.google.code.gson', name: 'gson', version: '2.3.1'
     compile group: 'com.google.cloud.dataflow', name: 'google-cloud-dataflow-java-sdk-all', version: '1.8.0'
-
-    //compile 'com.google.apis:google-api-services-datastore:v1beta2-rev31-1.22.0'
-
+    compile group: 'com.google.protobuf', name: 'protobuf-java', version: '3.1.0'
+    compile group: 'com.google.protobuf', name: 'protobuf-java-util', version: '3.1.0'
 
     // The production code uses the SLF4J logging API at compile time
     compile 'org.slf4j:slf4j-api:1.7.21'
@@ -54,8 +52,6 @@ run {
     }
 }
 
-mainClassName  = 'com.google.datastorebackup.Main'
-
 
 task uberjar(type: Jar) {
     from files(sourceSets.main.output.classesDir)
@@ -65,8 +61,6 @@ task uberjar(type: Jar) {
         exclude "META-INF/*.RSA"
     }
     manifest {
-    	attributes 'Main-Class': mainClassName
+      attributes 'Main-Class': 'com.google.datastorebackup.Main'
     }
 }
-
-
