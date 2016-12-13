@@ -39,14 +39,14 @@ public class Backup {
     
     // Add Timestamp + Entity Kind to backup files
     DateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd_HH.mm.ss");
-    String outputLocation = String.format("%s%s.%s", options.getBackupGCSPrefix(),
+    String outputLocation = String.format("%s.%s",
         options.getDatastoreEntityKind() ,
         dateFormat.format(new Date()));
     
-    if (options.getOutputLocation().endsWith("/")) {
-      outputLocation += "/";
+    if (options.getBackupGCSPrefix().endsWith("/")) {
+      outputLocation = options.getBackupGCSPrefix() + outputLocation + "/";
     } else {
-      outputLocation = "." + outputLocation;
+      outputLocation = options.getBackupGCSPrefix() + "." + outputLocation + "/";
     }
     
     // Build our Datastore query.
