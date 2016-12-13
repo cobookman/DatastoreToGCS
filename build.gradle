@@ -14,7 +14,7 @@ apply plugin: 'eclipse'
 
 sourceCompatibility = '1.7'
 version = '1.0'
-mainClassName = 'com.google.datstorebackup.Main'
+mainClassName = 'com.google.datastorebackup.Main'
 
 // In this section you declare where to find the dependencies of your project
 repositories {
