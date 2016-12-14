@@ -18,14 +18,14 @@ import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.JsonFormat.TypeRegistry;
 
 
-public class Restore {
+public class GCSRestore {
   public static void run(String[] args) {
     System.out.println("Making GCS->Datastore pipeline");
-    
+
     Options options = PipelineOptionsFactory.fromArgs(args)
         .withValidation()
         .as(Options.class);
-    
+
     if (options.getIsBlocking()) {
       options.setRunner(BlockingDataflowPipelineRunner.class);
     } else {
@@ -36,14 +36,14 @@ public class Restore {
     // Create Datastore sink
     DatastoreV1.Write write = DatastoreIO.v1().write()
         .withProjectId(options.getProject());
-      
-    
+
+
     // Build our data pipeline
     Pipeline pipeline = Pipeline.create(options);
     pipeline.apply("ReadBackup", TextIO.Read.from(options.getBackupGCSPrefix() + "*"))
     .apply("JsonToEntity", ParDo.of(new JsonToEntity()))
     .apply("EntityToDatastore", write);
-    
+
     System.out.println("Running pipeline");
     pipeline.run();
   }
@@ -58,7 +58,7 @@ public class Restore {
     @Validation.Required
     String getBackupGCSPrefix();
     void setBackupGCSPrefix(String outputGCSPrefix);
-    
+
     @Description("Block until dataflow job finishes")
     boolean getIsBlocking();
     void setIsBlocking(boolean isBlocking);
@@ -71,11 +71,11 @@ public class Restore {
       TypeRegistry typeRegistry = TypeRegistry.newBuilder()
         .add(Entity.getDescriptor())
         .build();
-      
+
       return JsonFormat.parser()
           .usingTypeRegistry(typeRegistry);
     }
-    
+
     @Override
     public void processElement(DoFn<String, Entity>.ProcessContext context) throws Exception {
       String json = context.element();

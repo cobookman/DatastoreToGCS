@@ -21,14 +21,14 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 
-public class Backup {
+public class GCSBackup {
   public static void run(String[] args) {
     System.out.println("Making Datastore->GCS pipeline");
-    
+
     Options options = PipelineOptionsFactory.fromArgs(args)
         .withValidation()
         .as(Options.class);
-    
+
     if (options.getIsBlocking()) {
       options.setRunner(BlockingDataflowPipelineRunner.class);
     } else {
@@ -36,37 +36,37 @@ public class Backup {
       options.setStreaming(false);
     }
 
-    
+
     // Add Timestamp + Entity Kind to backup files
     DateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd_HH.mm.ss");
     String outputLocation = String.format("%s.%s",
         options.getDatastoreEntityKind() ,
         dateFormat.format(new Date()));
-    
+
     if (options.getBackupGCSPrefix().endsWith("/")) {
       outputLocation = options.getBackupGCSPrefix() + outputLocation + "/";
     } else {
       outputLocation = options.getBackupGCSPrefix() + "." + outputLocation + "/";
     }
-    
+
     // Build our Datastore query.
     // Right now we are simply grabbing all Datastore records of a given kind,
     Query.Builder queryBuilder = Query.newBuilder();
     queryBuilder.addKindBuilder().setName(options.getDatastoreEntityKind());
     Query query = queryBuilder.build();
-    
+
     // Generate the Datastore Read Source
     DatastoreV1.Read read = DatastoreIO.v1().read()
         .withProjectId(options.getProject())
         .withQuery(query);
-    
+
     // Build our data pipeline
     Pipeline pipeline = Pipeline.create(options);
     pipeline.apply("IngestEntities", read)
             .apply("EntityToJson", ParDo.of(new DatastoreToJson()))
             .apply("WriteJson", TextIO.Write.to(outputLocation)
                 .withSuffix(".json"));
-    
+
     System.out.println("Running pipeline");
     pipeline.run();
   }
@@ -81,7 +81,7 @@ public class Backup {
     @Validation.Required
     String getBackupGCSPrefix();
     void setBackupGCSPrefix(String backupGCSPrefix);
-    
+
     @Description("Block until dataflow job finishes")
     boolean getIsBlocking();
     void setIsBlocking(boolean isBlocking);
@@ -89,17 +89,17 @@ public class Backup {
 
   static class DatastoreToJson extends DoFn<Entity, String> {
     private static JsonFormat.Printer jsonPrinter = createPrinter();
-    
+
     public static JsonFormat.Printer createPrinter() {
       TypeRegistry typeRegistry = TypeRegistry.newBuilder()
         .add(Entity.getDescriptor())
         .build();
-      
+
       return JsonFormat.printer()
           .usingTypeRegistry(typeRegistry)
           .omittingInsignificantWhitespace();
     }
-    
+
     @Override
     public void processElement(DoFn<Entity, String>.ProcessContext context) throws Exception {
       Entity elm = context.element();

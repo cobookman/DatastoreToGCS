@@ -7,11 +7,10 @@ gradle clean build uberjar
 
 # Deploy streaming pipelien
 java -jar $DIR/build/libs/*.jar \
-   backup \
-   --project=some-project-id \
+   gcsrestore \
+   --project=my-project-id\
    --stagingLocation=gs://some-gcs-bucket-of-mine/staging/ \
    --tempLocation=gs://some-gcs-bucket-of-mine/temp/ \
-   --backupGCSPrefix=gs://some-gcs-bucket-of-mine/path-to-where-to-store-backups/ \
-   --datastoreEntityKind=some-datastore-entity \
+   --backupGCSPrefix=gs://some-gcs-bucket-of-mine/path-to-backup-folder/ \
    --isBlocking
 

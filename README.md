@@ -28,7 +28,7 @@ files located under the specified backupGCSPrefix.
 
 For example say you had the following command:
 ```bash
-java -jar build/libs/*.jar backup \
+java -jar build/libs/*.jar gcsbackup \
   --project=superman
   --stagingLocation=gs://superman-backups/staging/ \
   --tempLocation=gs://superman-backups/temp/ \
@@ -64,7 +64,7 @@ of ComicBooks. And you specified a backupGCSPrefix of
 Your restore command would look like:
 
 ```bash
-java -jar build/libs/*.jar restore \
+java -jar build/libs/*.jar gcsrestore \
   --project=superman \
   --stagingLocation=gs://superman-backups/staging/ \
   --tempLocation=gs://superman-backups/temp/ \
