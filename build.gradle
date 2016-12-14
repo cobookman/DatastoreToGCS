@@ -14,6 +14,7 @@ apply plugin: 'eclipse'
 
 sourceCompatibility = '1.7'
 version = '1.0'
+mainClassName = 'com.google.datastorebackup.Main'
 
 // In this section you declare where to find the dependencies of your project
 repositories {
@@ -62,6 +63,6 @@ task uberjar(type: Jar) {
         exclude "META-INF/*.RSA"
     }
     manifest {
-      attributes 'Main-Class': 'com.google.datastorebackup.Main'
+      attributes 'Main-Class': mainClassName
     }
 }
