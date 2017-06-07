@@ -27,12 +27,12 @@ if [[ -z $TEMPLATE ]]; then
   read TEMPLATE
 fi
 
-gradle clean build uberjar
+gradle clean build shadowJar
 
 JOB_FILE="${JOB_FILE%/}/Datastore.$ENTITY_KIND.to.GCS"
 echo "Saving template to: $JOB_FILE"
 
-java -jar build/libs/*.jar \
+java -jar build/libs/shadow-1.0-Alpha.jar \
   datastore_to_gcs \
   --runner=DataflowRunner \
   --project=$PROJECT \
