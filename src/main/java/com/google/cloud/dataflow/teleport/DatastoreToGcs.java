@@ -1,13 +1,12 @@
 package com.google.cloud.dataflow.teleport;
 
+import org.apache.beam.runners.dataflow.DataflowRunner;
 import org.apache.beam.sdk.Pipeline;
-import org.apache.beam.sdk.PipelineResult;
+import org.apache.beam.sdk.extensions.gcp.options.GcpOptions;
 import org.apache.beam.sdk.io.TextIO;
 
 import org.apache.beam.sdk.io.gcp.datastore.DatastoreIO;
-import org.apache.beam.sdk.io.gcp.datastore.DatastoreV1;
 
-import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.options.Validation;
@@ -41,7 +40,8 @@ public class DatastoreToGcs {
         .withValidation()
         .as(Options.class);
 
-//    System.out.println("Pipeline runner of: " + options.getRunner().toString());
+    // Forcing to Dataflow Runner
+    options.setRunner(DataflowRunner.class);
 
     // Build DatastoreToGCS pipeline
     Pipeline pipeline = Pipeline.create(options);
@@ -49,7 +49,7 @@ public class DatastoreToGcs {
     pipeline
         .apply("IngestEntities",
             DatastoreIO.v1().read()
-              .withProjectId(options.getProjectId())
+              .withProjectId(options.getProject())
               .withLiteralGqlQuery(options.getGqlQuery())
               .withNamespace(options.getNamespace()))
         .apply("EntityToJson", ParDo.of(new EntityToJson()))
@@ -57,20 +57,10 @@ public class DatastoreToGcs {
             .withSuffix(".json"));
 
     // Start the job
-    PipelineResult pipelineResult = pipeline.run();
-
-    if (options.getKeepJobsRunning()) {
-      System.out.println("Blocking until done");
-      try {
-        System.out.println(pipelineResult.waitUntilFinish());
-      } catch (Exception exc) {
-        System.err.println(exc);
-        pipelineResult.cancel();
-      }
-    }
+    pipeline.run();
   }
 
-   interface Options extends CommonOptions {
+  interface Options extends GcpOptions {
     @Validation.Required
     @Description("GCS Path E.g: gs://mybucket/somepath/")
     ValueProvider<String> getGcsSavePath();

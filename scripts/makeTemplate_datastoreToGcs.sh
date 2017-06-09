@@ -3,18 +3,12 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd $DIR/..
 
 PROJECT="strong-moose"
-STAGING="gs://strong-moose.appspot.com/staging/"
 TEMP="gs://strong-moose.appspot.com/temp/"
-TEMPLATE="gs://strong-moose.appspot.com/templates3/"
+TEMPLATE="gs://strong-moose.appspot.com/templates4/datastoreToGcs"
 
 if [[ -z $PROJECT ]]; then
   echo -n "What is the project Id: "
   read PROJECT
-fi
-
-if [[ -z $STAGING ]]; then
-  echo -n "What is the GCS staging location: "
-  read STAGING
 fi
 
 if [[ -z $TEMP ]]; then
@@ -23,7 +17,7 @@ if [[ -z $TEMP ]]; then
 fi
 
 if [[ -z $TEMPLATE ]]; then
-  echo -n "Where are templates stored: "
+  echo -n "Where to store this template stored: "
   read TEMPLATE
 fi
 
@@ -37,6 +31,4 @@ java -jar build/libs/shadow-1.0-Alpha.jar \
   --runner=DataflowRunner \
   --project=$PROJECT \
   --gcpTempLocation=$TEMP \
-  --stagingLocation=$STAGING \
-  --tempLocation=$TEMP 
-#  --templateLocation=$TEMPLATE 
+  --templateLocation=$TEMPLATE
