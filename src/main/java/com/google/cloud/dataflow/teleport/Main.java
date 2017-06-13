@@ -1,5 +1,6 @@
 package com.google.cloud.dataflow.teleport;
 
+import javax.script.ScriptException;
 import org.apache.beam.sdk.Pipeline;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -33,7 +34,8 @@ public class Main {
     }
   }
 
-  public static void main(String[] cliargs) throws IllegalAccessException, InstantiationException, IOException {
+  public static void main(String[] cliargs)
+      throws IllegalAccessException, InstantiationException, IOException, ScriptException {
     if (cliargs.length < 1) {
       throw new IllegalArgumentException(help("No pipeline specified"));
     }
