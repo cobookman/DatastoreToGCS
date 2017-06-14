@@ -37,4 +37,4 @@ if [[ -z $GCS_TRANSFORM ]]; then
   read GCS_TRANSFORM
 fi
 
-gcloud beta dataflow jobs run $JOB_NAME --gcs-location="$GCS_TEMPLATE" --project=$PROJECT --parameters gcsSavePath="$GCS_SAVE",gqlQuery="$GQL",project=$PROJECT,gcsJsTransformFn=$GCS_TRANSFORM
+gcloud beta dataflow jobs run $JOB_NAME --gcs-location="$GCS_TEMPLATE" --project=$PROJECT --parameters gcsSavePath="$GCS_SAVE",gqlQuery="$GQL",project=$PROJECT,gcsJsTransformFns=$GCS_TRANSFORM
