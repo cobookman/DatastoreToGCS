@@ -23,6 +23,7 @@ import com.google.cloud.storage.StorageOptions;
 import com.google.common.base.Strings;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
@@ -36,25 +37,37 @@ import javax.script.ScriptException;
 public abstract class JSTransform {
   abstract String gcsJSPath();
   abstract String engineName();
+  abstract Optional<String> project();
   private static Invocable mInvocable;
 
   public static Builder newBuilder() {
-    return new com.google.cloud.dataflow.teleport.Helpers.AutoValue_JSTransform.Builder();
+    return new com.google.cloud.dataflow.teleport.Helpers.AutoValue_JSTransform.Builder()
+        .setEngineName("JavaScript");
   }
 
   @AutoValue.Builder
   public abstract static class Builder {
     public abstract Builder setGcsJSPath(String gcsJSPath);
+    public abstract Builder setProject(Optional<String> project);
     public abstract Builder setEngineName(String engineName);
     public abstract JSTransform build();
   }
 
+  private Storage getStorageService() {
+    StorageOptions storageOptions = StorageOptions.getDefaultInstance();
+    if (project().isPresent()) {
+      storageOptions = StorageOptions.newBuilder()
+          .setProjectId(project().get())
+          .build();
+    }
+    return storageOptions.getService();
+  }
+
   public List<String> getScripts() {
-    Storage storage = StorageOptions.getDefaultInstance().getService();
     String bucketName = gcsJSPath().replace("gs://", "").split("/")[0];
     String prefixPath = gcsJSPath().replace("gs://" + bucketName + "/", "");
 
-    Bucket bucket = storage.get(bucketName);
+    Bucket bucket = getStorageService().get(bucketName);
 
     ArrayList<String> filePaths = new ArrayList<>();
     if (prefixPath.endsWith(".js")) {
@@ -93,12 +106,7 @@ public abstract class JSTransform {
 
     if (mInvocable == null) {
       ScriptEngineManager engineManager = new ScriptEngineManager();
-      ScriptEngine scriptEngine;
-      if (Strings.isNullOrEmpty(engineName())) {
-        scriptEngine = engineManager.getEngineByName("JavaScript");
-      } else {
-        scriptEngine = engineManager.getEngineByName(engineName());
-      }
+      ScriptEngine scriptEngine = engineManager.getEngineByName(engineName());
 
       for (String script : getScripts()) {
         scriptEngine.eval(script);

@@ -2,9 +2,9 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd $DIR/..
 
-PROJECT="strong-moose"
-TEMP="gs://strong-moose.appspot.com/temp/"
-TEMPLATE="gs://strong-moose.appspot.com/templates4/datastoreToGcs"
+PROJECT="teleport-test-170818"
+TEMP="gs://teleport-test/temp/"
+TEMPLATE="gs://teleport-test/templates/datastoreToGcs"
 
 if [[ -z $PROJECT ]]; then
   echo -n "What is the project Id: "
@@ -23,12 +23,15 @@ fi
 
 gradle clean build shadowJar
 
-JOB_FILE="${JOB_FILE%/}/Datastore.$ENTITY_KIND.to.GCS"
-echo "Saving template to: $JOB_FILE"
-
 java -jar build/libs/shadow-1.0-Alpha.jar \
   datastore_to_gcs \
   --runner=DataflowRunner \
   --project=$PROJECT \
   --gcpTempLocation=$TEMP \
   --templateLocation=$TEMPLATE
+
+if [ $? -eq 0 ]; then
+  echo "Success! Built Template"
+else
+  echo "Failed to build Template :'("
+fi

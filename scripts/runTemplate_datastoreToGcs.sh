@@ -1,35 +1,32 @@
 #!/usr/bin/env bash
 
-PROJECT="strong-moose"
-GCS_TEMPLATE="gs://strong-moose.appspot.com/templates4/datastoreToGcs"
-GCS_SAVE="gs://strong-moose.appspot.com/backups/my-backups3/"
-GCS_TRANSFORM="gs://strong-moose.appspot.com/transform.js"
-GQL="SELECT * FROM Drawing"
+DATAFLOW_PROJECT="teleport-test-170818"
+DATASTORE_PROJECT="teleport-test-170818"
+TEMPLATE="gs://teleport-test/templates/datastoreToGcs"
+SAVE_PATH="gs://teleport-test/backups/"
+TRANSFORM_PATH="gs://teleport-test/transforms/"
+GQL="SELECT * FROM SomeKind"
 JOB_NAME=""
 
-if [[ -z $PROJECT ]]; then
-  echo -n "What is the project Id: "
-  read PROJECT
+
+if [[ -z $DATAFLOW_PROJECT ]]; then
+  echo -n "Project to run dataflow job in: "
+  read DATAFLOW_PROJECT
 fi
 
-if [[ -z $GCS_TEMPLATE ]]; then
+if [[ -z $DATASTORE_PROJECT ]]; then
+  echo -n "Project to pull Datastore Entities From: "
+  read DATASTORE_PROJECT
+fi
+
+if [[ -z $TEMPLATE ]]; then
   echo -n "Where is the Dataflow Template Located: "
-  read GCS_TEMPLATE
+  read TEMPLATE
 fi
 
-if [[ -z $GQL ]]; then
-  echo -n "GQL Query of datastore entities to fetch: "
-  read GQL
-fi
-
-if [[ -z $GCS_SAVE ]]; then
+if [[ -z $SAVE_PATH ]]; then
   echo -n "Where to save datstore entities: "
-  read GCS_SAVE
-fi
-
-if [[ -z $JOB_NAME ]]; then
-  echo -n "What should the job name be (no spaces): "
-  read JOB_NAME
+  read SAVE_PATH
 fi
 
 if [[ -z $GCS_TRANSFORM ]]; then
@@ -37,4 +34,18 @@ if [[ -z $GCS_TRANSFORM ]]; then
   read GCS_TRANSFORM
 fi
 
-gcloud beta dataflow jobs run $JOB_NAME --gcs-location="$GCS_TEMPLATE" --project=$PROJECT --parameters gcsSavePath="$GCS_SAVE",gqlQuery="$GQL",project=$PROJECT,gcsJsTransformFns=$GCS_TRANSFORM
+if [[ -z $GQL ]]; then
+  echo -n "GQL Query of datastore entities to fetch: "
+  read GQL
+fi
+
+if [[ -z $JOB_NAME ]]; then
+  echo -n "What should the job name be (no spaces): "
+  read JOB_NAME
+fi
+
+
+gcloud beta dataflow jobs run $JOB_NAME \
+  --gcs-location="$TEMPLATE" \
+  --project=$DATAFLOW_PROJECT \
+  --parameters gcsSavePath="$SAVE_PATH",gqlQuery="$GQL",datastoreProject=$DATASTORE_PROJECT,gcsJsTransformFns=$GCS_TRANSFORM

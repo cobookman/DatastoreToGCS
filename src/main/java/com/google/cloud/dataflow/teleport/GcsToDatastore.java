@@ -54,7 +54,7 @@ public class GcsToDatastore {
 
     pipeline
         .apply("IngestJson", TextIO.read()
-            .from(options.getGcsPathPrefix()))
+            .from(options.getJsonPathPrefix()))
         .apply("GcsToEntity", ParDo.of(new JsonToEntity(options)))
         .apply(DatastoreIO.v1().write()
             .withProjectId(options.getDatastoreProject()));
@@ -65,12 +65,12 @@ public class GcsToDatastore {
   interface Options extends GcpOptions {
     @Validation.Required
     @Description("GCS Data Path E.g: gs://mybucket/somepath/")
-    ValueProvider<String> getGcsPathPrefix();
-    void setGcsPathPrefix(ValueProvider<String> gcsPathPrefix);
+    ValueProvider<String> getJsonPathPrefix();
+    void setJsonPathPrefix(ValueProvider<String> jsonPathPrefix);
 
     @Description("GCS path to javascript fn for transforming output")
     ValueProvider<String> getJsTransformPath();
-    void getJsTransformPath(ValueProvider<String> jsTransformPath);
+    void setJsTransformPath(ValueProvider<String> jsTransformPath);
 
     @Description("Project to save Datastore Entities in")
     ValueProvider<String> getDatastoreProject();
@@ -83,10 +83,10 @@ public class GcsToDatastore {
   static class JsonToEntity extends DoFn<String, Entity> {
     protected JsonFormat.Parser mJsonParser;
     protected JSTransform mJSTransform;
-    protected ValueProvider<String> mTransformValueProvider;
+    protected ValueProvider<String> mJsTransformPath;
 
     public JsonToEntity(Options options) {
-      mTransformValueProvider = options.getJsTransformPath();
+      mJsTransformPath = options.getJsTransformPath();
     }
 
     private JsonFormat.Parser getJsonParser() {
@@ -104,7 +104,7 @@ public class GcsToDatastore {
     private JSTransform getJSTransform() throws ScriptException {
       if (mJSTransform == null) {
         mJSTransform = JSTransform.newBuilder()
-            .setGcsJSPath(mTransformValueProvider.get())
+            .setGcsJSPath(mJsTransformPath.get())
             .build();
       }
       return mJSTransform;

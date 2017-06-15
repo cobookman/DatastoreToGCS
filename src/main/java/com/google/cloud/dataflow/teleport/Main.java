@@ -66,7 +66,6 @@ public class Main {
         help("Pipeline specified does not exist");
         break;
     }
-
   }
 
   public static String help(String msg) {

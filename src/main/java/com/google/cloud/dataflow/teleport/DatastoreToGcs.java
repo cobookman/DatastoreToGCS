@@ -60,7 +60,7 @@ public class DatastoreToGcs {
                 .withLiteralGqlQuery(options.getGqlQuery())
                 .withNamespace(options.getNamespace()))
         .apply("EntityToJson", ParDo.of(new EntityToJson(options)))
-        .apply("JsonToGcs", TextIO.write().to(options.getGcsSavePath())
+        .apply("JsonToGcs", TextIO.write().to(options.getSavePath())
             .withSuffix(".json"));
 
     pipeline.run();
@@ -70,26 +70,26 @@ public class DatastoreToGcs {
 
     @Validation.Required
     @Description("GCS Path E.g: gs://mybucket/somepath/")
-    ValueProvider<String> getGcsSavePath();
-    void setGcsSavePath(ValueProvider<String> gcsSavePath);
+    ValueProvider<String> getSavePath();
+    void setSavePath(ValueProvider<String> savePath);
 
     @Validation.Required
-    @Description("GQL Query to get the datastore Entities")
+    @Description("GQL Query to specify which datastore Entities")
     ValueProvider<String> getGqlQuery();
     void setGqlQuery(ValueProvider<String> gqlQuery);
 
-    @Description("Project to save Datastore Entities in")
+    @Description("Project to grab Datastore Entities from")
     ValueProvider<String> getDatastoreProject();
     void setDatastoreProject(ValueProvider<String> datastoreProject);
 
     @Validation.Required
-    @Description("Namespace of Entities, use `\"\"` for default")
+    @Description("Namespace of requested Entities, use `\"\"` for default")
     ValueProvider<String> getNamespace();
     void setNamespace(ValueProvider<String> namespace);
 
     @Description("GCS path to javascript fn for transforming output")
     ValueProvider<String> getJsTransformPath();
-    void getJsTransformPath(ValueProvider<String> jsTransformPath);
+    void setJsTransformPath(ValueProvider<String> jsTransformPath);
   }
 
   /**
@@ -98,10 +98,10 @@ public class DatastoreToGcs {
   static class EntityToJson extends DoFn<Entity, String> {
     protected JsonFormat.Printer mJsonPrinter;
     protected JSTransform mJSTransform;
-    protected ValueProvider<String> mTransformValueProvider;
+    protected ValueProvider<String> mJsTransformPath;
 
     public EntityToJson(Options options) {
-      mTransformValueProvider = options.getJsTransformPath();
+      mJsTransformPath = options.getJsTransformPath();
     }
 
     private JsonFormat.Printer getJsonPrinter() {
@@ -120,7 +120,7 @@ public class DatastoreToGcs {
     private JSTransform getJSTransform() throws ScriptException {
       if (mJSTransform == null) {
         mJSTransform = JSTransform.newBuilder()
-            .setGcsJSPath(mTransformValueProvider.get())
+            .setGcsJSPath(mJsTransformPath.get())
             .build();
       }
       return mJSTransform;
