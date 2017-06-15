@@ -14,22 +14,29 @@ public class JSTransformTest {
 
   @Test
   public void testJSTransform_getScripts() {
-    List<String> scripts = JSTransform
-        .getScripts(gcsTransformFns);
+    JSTransform jsTransform = JSTransform.newBuilder()
+        .setGcsJSPath(gcsTransformFns)
+        .build();
+
+    List<String> scripts = jsTransform.getScripts();
     Assert.assertEquals(4, scripts.size());
 
-    List<String> goodScripts = JSTransform
-        .getScripts(gcsTransformFns + "/good_script/");
+    JSTransform jsTransformGood = JSTransform.newBuilder()
+        .setGcsJSPath(gcsTransformFns + "/good_script/")
+        .build();
+
+    List<String> goodScripts = jsTransformGood.getScripts();
     Assert.assertEquals(1, goodScripts.size());
   }
 
 
   @Test
   public void testJSTransform_getInvocable() throws ScriptException, NoSuchMethodException {
+    JSTransform jsTransform = JSTransform.newBuilder()
+        .setGcsJSPath(gcsTransformFns + "/good_script/")
+        .build();
 
-    Invocable invocable = JSTransform.buildInvocable(
-        gcsTransformFns + "/good_script/");
-    String output = (String) invocable.invokeFunction("transform", "{\"key\": \"value\"}");
+    String output = (String) jsTransform.invoke( "{\"key\": \"value\"}");
     String expected = "{\"Some Property\":\"Some Key\",\"entity jsonified\":\"{\\\"key\\\": \\\"value\\\"}\"}";
     Assert.assertEquals(expected, output);
   }

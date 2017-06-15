@@ -4,15 +4,13 @@ import com.google.cloud.dataflow.teleport.Helpers.JSTransform;
 
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.JsonFormat.TypeRegistry;
-import javax.script.Invocable;
 import javax.script.ScriptException;
-import javax.annotation.Nullable;
 import org.apache.beam.runners.dataflow.DataflowRunner;
 import org.apache.beam.sdk.Pipeline;
-import org.apache.beam.sdk.extensions.gcp.options.GcpOptions;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.gcp.datastore.DatastoreIO;
 import org.apache.beam.sdk.options.Description;
+import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.options.Validation;
 import org.apache.beam.sdk.options.ValueProvider;
@@ -45,7 +43,7 @@ public class DatastoreToGcs {
     pipeline
         .apply("IngestEntities",
             DatastoreIO.v1().read()
-                .withProjectId(options.getProject())
+                .withProjectId(options.getDatastoreProject())
                 .withLiteralGqlQuery(options.getGqlQuery())
                 .withNamespace(options.getNamespace()))
         .apply("EntityToJson", ParDo.of(new EntityToJson(options)))
@@ -55,7 +53,7 @@ public class DatastoreToGcs {
     pipeline.run();
   }
 
-  interface Options extends GcpOptions {
+  interface Options extends PipelineOptions {
 
     @Validation.Required
     @Description("GCS Path E.g: gs://mybucket/somepath/")
@@ -67,14 +65,18 @@ public class DatastoreToGcs {
     ValueProvider<String> getGqlQuery();
     void setGqlQuery(ValueProvider<String> gqlQuery);
 
+    @Description("Project to save Datastore Entities in")
+    ValueProvider<String> getDatastoreProject();
+    void setDatastoreProject(ValueProvider<String> datastoreProject);
+
     @Validation.Required
     @Description("Namespace of Entities, use `\"\"` for default")
     ValueProvider<String> getNamespace();
     void setNamespace(ValueProvider<String> namespace);
 
     @Description("GCS path to javascript fn for transforming output")
-    ValueProvider<String> getGcsJsTransformFns();
-    void setGcsJsTransformFns(ValueProvider<String> gcsJsTransformFns);
+    ValueProvider<String> getJsTransformPath();
+    void getJsTransformPath(ValueProvider<String> jsTransformPath);
   }
 
   /**
@@ -82,11 +84,11 @@ public class DatastoreToGcs {
    */
   static class EntityToJson extends DoFn<Entity, String> {
     protected JsonFormat.Printer mJsonPrinter;
+    protected JSTransform mJSTransform;
     protected ValueProvider<String> mTransformValueProvider;
-    protected Invocable mInvocable;
 
     public EntityToJson(Options options) {
-      mTransformValueProvider = options.getGcsJsTransformFns();
+      mTransformValueProvider = options.getJsTransformPath();
     }
 
     private JsonFormat.Printer getJsonPrinter() {
@@ -102,12 +104,13 @@ public class DatastoreToGcs {
       return mJsonPrinter;
     }
 
-    @Nullable
-    private Invocable getInvocable() throws ScriptException {
-      if (mInvocable == null) {
-        return JSTransform.buildInvocable(mTransformValueProvider.get());
+    private JSTransform getJSTransform() throws ScriptException {
+      if (mJSTransform == null) {
+        mJSTransform = JSTransform.newBuilder()
+            .setGcsJSPath(mTransformValueProvider.get())
+            .build();
       }
-      return mInvocable;
+      return mJSTransform;
     }
 
     @ProcessElement
@@ -115,9 +118,10 @@ public class DatastoreToGcs {
       Entity entity = c.element();
       String json = getJsonPrinter().print(entity);
 
-      if (getInvocable() != null) {
-        json = (String) getInvocable().invokeFunction("transform", json);
+      if (getJSTransform().hasTransform()) {
+        json = getJSTransform().invoke(json);
       }
+
       c.output(json);
     }
   }

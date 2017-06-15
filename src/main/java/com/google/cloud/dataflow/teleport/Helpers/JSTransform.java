@@ -1,6 +1,7 @@
 package com.google.cloud.dataflow.teleport.Helpers;
 
 import com.google.api.gax.paging.Page;
+import com.google.auto.value.AutoValue;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Bucket;
 import com.google.cloud.storage.Storage;
@@ -8,9 +9,7 @@ import com.google.cloud.storage.Storage.BlobListOption;
 import com.google.cloud.storage.StorageOptions;
 import com.google.common.base.Strings;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
@@ -20,12 +19,27 @@ import javax.script.ScriptException;
 /**
  * Handles all Javascript Transform related aspects
  */
-public class JSTransform {
-  public static List<String> getScripts(String gcsTransformFn) {
+@AutoValue
+public abstract class JSTransform {
+  abstract String gcsJSPath();
+  abstract String engineName();
+  private static Invocable mInvocable;
 
+  public static Builder newBuilder() {
+    return new com.google.cloud.dataflow.teleport.Helpers.AutoValue_JSTransform.Builder();
+  }
+
+  @AutoValue.Builder
+  public abstract static class Builder {
+    public abstract Builder setGcsJSPath(String gcsJSPath);
+    public abstract Builder setEngineName(String engineName);
+    public abstract JSTransform build();
+  }
+
+  public List<String> getScripts() {
     Storage storage = StorageOptions.getDefaultInstance().getService();
-    String bucketName = gcsTransformFn.replace("gs://", "").split("/")[0];
-    String prefixPath = gcsTransformFn.replace("gs://" + bucketName + "/", "");
+    String bucketName = gcsJSPath().replace("gs://", "").split("/")[0];
+    String prefixPath = gcsJSPath().replace("gs://" + bucketName + "/", "");
 
     Bucket bucket = storage.get(bucketName);
 
@@ -49,21 +63,36 @@ public class JSTransform {
     return scripts;
   }
 
+  public String invoke(String data) throws ScriptException, NoSuchMethodException {
+    return (String) getInvocable().invokeFunction("transform", data);
+  }
+
+
+  public boolean hasTransform() throws ScriptException {
+    return (getInvocable() != null);
+  }
+
   @Nullable
-  public static Invocable buildInvocable(String gcsTransformFn) throws ScriptException {
-    if (Strings.isNullOrEmpty(gcsTransformFn)) {
+  public Invocable getInvocable() throws ScriptException {
+    if (Strings.isNullOrEmpty(gcsJSPath())) {
       return null;
     }
 
-    ScriptEngineManager engineManager = new ScriptEngineManager();
-    ScriptEngine scriptEngine = engineManager.getEngineByName("JavaScript");
+    if (mInvocable == null) {
+      ScriptEngineManager engineManager = new ScriptEngineManager();
+      ScriptEngine scriptEngine;
+      if (Strings.isNullOrEmpty(engineName())) {
+        scriptEngine = engineManager.getEngineByName("JavaScript");
+      } else {
+        scriptEngine = engineManager.getEngineByName(engineName());
+      }
 
-    List<String> scripts = getScripts(gcsTransformFn);
+      for (String script : getScripts()) {
+        scriptEngine.eval(script);
+      }
 
-    for (String script : scripts) {
-      scriptEngine.eval(script);
+      mInvocable = (Invocable) scriptEngine;
     }
-
-    return (Invocable) scriptEngine;
+    return mInvocable;
   }
 }

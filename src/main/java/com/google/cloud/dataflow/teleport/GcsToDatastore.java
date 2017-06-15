@@ -58,9 +58,10 @@ public class GcsToDatastore {
     void setGcsPathPrefix(ValueProvider<String> gcsPathPrefix);
 
     @Description("GCS path to javascript fn for transforming output")
-    ValueProvider<String> getGcsJsTransformFns();
-    void setGcsJsTransformFns(ValueProvider<String> gcsJsTransformFns);
+    ValueProvider<String> getJsTransformPath();
+    void getJsTransformPath(ValueProvider<String> jsTransformPath);
 
+    @Description("Project to save Datastore Entities in")
     ValueProvider<String> getDatastoreProject();
     void setDatastoreProject(ValueProvider<String> datastoreProject);
   }
@@ -70,11 +71,11 @@ public class GcsToDatastore {
    */
   static class JsonToEntity extends DoFn<String, Entity> {
     protected JsonFormat.Parser mJsonParser;
+    protected JSTransform mJSTransform;
     protected ValueProvider<String> mTransformValueProvider;
-    protected Invocable mInvocable;
 
     public JsonToEntity(Options options) {
-      mTransformValueProvider = options.getGcsJsTransformFns();
+      mTransformValueProvider = options.getJsTransformPath();
     }
 
     private JsonFormat.Parser getJsonParser() {
@@ -89,20 +90,21 @@ public class GcsToDatastore {
       return mJsonParser;
     }
 
-    @Nullable
-    private Invocable getInvocable() throws ScriptException {
-      if (mInvocable == null) {
-        return JSTransform.buildInvocable(mTransformValueProvider.get());
+    private JSTransform getJSTransform() throws ScriptException {
+      if (mJSTransform == null) {
+        mJSTransform = JSTransform.newBuilder()
+            .setGcsJSPath(mTransformValueProvider.get())
+            .build();
       }
-      return mInvocable;
+      return mJSTransform;
     }
 
     @ProcessElement
     public void processElement(ProcessContext c) throws Exception {
       String entityJson = c.element();
 
-      if (getInvocable() != null) {
-        entityJson = (String) getInvocable().invokeFunction("transform", entityJson);
+      if (getJSTransform().hasTransform()) {
+        entityJson = getJSTransform().invoke(entityJson);
       }
 
       Builder builder = Entity.newBuilder();
