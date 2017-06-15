@@ -50,13 +50,7 @@ public class Main {
     }
 
     String[] pipelineArgs = Arrays.copyOfRange(cliargs, 1, cliargs.length);
-    System.out.println("Pipeline Args");
-    for(String s : pipelineArgs) {
-      System.out.println(s);
-    }
-
-    Pipeline p = Pipeline.getPipeline(cliargs[0]);
-    switch (p) {
+    switch (Pipeline.getPipeline(cliargs[0])) {
       case DATASTORE_TO_GCS:
         DatastoreToGcs.main(pipelineArgs);
         break;

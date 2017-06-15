@@ -55,7 +55,7 @@ public class GcsToDatastore {
     pipeline
         .apply("IngestJson", TextIO.read()
             .from(options.getJsonPathPrefix()))
-        .apply("GcsToEntity", ParDo.of(new JsonToEntity(options)))
+        .apply("GcsToEntity", ParDo.of(new JsonToEntity(options.getJsTransformPath())))
         .apply(DatastoreIO.v1().write()
             .withProjectId(options.getDatastoreProject()));
 
@@ -85,8 +85,8 @@ public class GcsToDatastore {
     protected JSTransform mJSTransform;
     protected ValueProvider<String> mJsTransformPath;
 
-    public JsonToEntity(Options options) {
-      mJsTransformPath = options.getJsTransformPath();
+    public JsonToEntity(ValueProvider<String> jsTransformPath) {
+      mJsTransformPath = jsTransformPath;
     }
 
     private JsonFormat.Parser getJsonParser() {
@@ -103,8 +103,13 @@ public class GcsToDatastore {
 
     private JSTransform getJSTransform() throws ScriptException {
       if (mJSTransform == null) {
+        String jsTransformPath = "";
+        if (mJsTransformPath.isAccessible()) {
+          jsTransformPath = mJsTransformPath.get();
+        }
+
         mJSTransform = JSTransform.newBuilder()
-            .setGcsJSPath(mJsTransformPath.get())
+            .setGcsJSPath(jsTransformPath)
             .build();
       }
       return mJSTransform;
@@ -120,8 +125,8 @@ public class GcsToDatastore {
 
       Builder builder = Entity.newBuilder();
       getJsonParser().merge(entityJson, builder);
-
-      c.output(builder.build());
+      Entity entity = builder.build();
+      c.output(entity);
     }
   }
 }

@@ -35,21 +35,22 @@ import javax.script.ScriptException;
  */
 @AutoValue
 public abstract class JSTransform {
-  abstract String gcsJSPath();
+  @Nullable abstract String gcsJSPath();
   abstract String engineName();
   abstract Optional<String> project();
   private static Invocable mInvocable;
 
   public static Builder newBuilder() {
     return new com.google.cloud.dataflow.teleport.Helpers.AutoValue_JSTransform.Builder()
-        .setEngineName("JavaScript");
+        .setEngineName("JavaScript")
+        .setGcsJSPath("");
   }
 
   @AutoValue.Builder
   public abstract static class Builder {
     public abstract Builder setGcsJSPath(String gcsJSPath);
-    public abstract Builder setProject(Optional<String> project);
     public abstract Builder setEngineName(String engineName);
+    public abstract Builder setProject(Optional<String> project);
     public abstract JSTransform build();
   }
 
@@ -64,6 +65,10 @@ public abstract class JSTransform {
   }
 
   public List<String> getScripts() {
+    if (Strings.isNullOrEmpty(gcsJSPath())) {
+      return new ArrayList<>();
+    }
+
     String bucketName = gcsJSPath().replace("gs://", "").split("/")[0];
     String prefixPath = gcsJSPath().replace("gs://" + bucketName + "/", "");
 

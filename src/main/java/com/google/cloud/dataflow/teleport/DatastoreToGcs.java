@@ -59,7 +59,7 @@ public class DatastoreToGcs {
                 .withProjectId(options.getDatastoreProject())
                 .withLiteralGqlQuery(options.getGqlQuery())
                 .withNamespace(options.getNamespace()))
-        .apply("EntityToJson", ParDo.of(new EntityToJson(options)))
+        .apply("EntityToJson", ParDo.of(new EntityToJson(options.getJsTransformPath())))
         .apply("JsonToGcs", TextIO.write().to(options.getSavePath())
             .withSuffix(".json"));
 
@@ -95,13 +95,13 @@ public class DatastoreToGcs {
   /**
    * Converts a Datstore Entity to Protobuf encoded Json
    */
-  static class EntityToJson extends DoFn<Entity, String> {
+  public static class EntityToJson extends DoFn<Entity, String> {
     protected JsonFormat.Printer mJsonPrinter;
     protected JSTransform mJSTransform;
     protected ValueProvider<String> mJsTransformPath;
 
-    public EntityToJson(Options options) {
-      mJsTransformPath = options.getJsTransformPath();
+    public EntityToJson(ValueProvider<String> jsTransformPath) {
+      mJsTransformPath = jsTransformPath;
     }
 
     private JsonFormat.Printer getJsonPrinter() {
@@ -119,8 +119,13 @@ public class DatastoreToGcs {
 
     private JSTransform getJSTransform() throws ScriptException {
       if (mJSTransform == null) {
+        String jsTransformPath = "";
+        if (mJsTransformPath.isAccessible()) {
+          jsTransformPath = mJsTransformPath.get();
+        }
+
         mJSTransform = JSTransform.newBuilder()
-            .setGcsJSPath(mJsTransformPath.get())
+            .setGcsJSPath(jsTransformPath)
             .build();
       }
       return mJSTransform;
